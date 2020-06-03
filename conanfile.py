@@ -3,7 +3,9 @@ from conans import ConanFile, CMake, tools
 
 class GlewConan(ConanFile):
     name = "glew"
-    version = "2.1.0"
+    lib_version = '2.1.0'
+    revision = '1'
+    version = '{}-{}'.format(lib_version, revision)
     description = "The GLEW library"
     url = "http://github.com/bincrafters/conan-glew"
     homepage = "http://github.com/nigels-com/glew"
@@ -42,9 +44,15 @@ class GlewConan(ConanFile):
         del self.settings.compiler.libcxx
 
     def source(self):
-        release_name = "%s-%s" % (self.name, self.version)
+        release_name = "%s-%s" % (self.name, self.lib_version)
         tools.get("{0}/releases/download/{1}/{1}.tgz".format(self.homepage, release_name), sha256="04de91e7e6763039bc11940095cd9c7f880baba82196a7765f727ac05a993c95")
         os.rename(release_name, self._source_subfolder)
+
+        # add missing runtime libraries
+        tools.replace_in_file("%s/build/cmake/CMakeLists.txt" % self._source_subfolder, "target_link_libraries (glew LINK_PRIVATE -nodefaultlib -noentry)",
+        '''target_link_libraries (glew LINK_PRIVATE -nodefaultlib -noentry)
+           target_link_libraries (glew LINK_PRIVATE libvcruntime.lib)
+           target_link_libraries (glew LINK_PRIVATE msvcrt.lib )''')
 
     def _configure_cmake(self):
         cmake = CMake(self)
